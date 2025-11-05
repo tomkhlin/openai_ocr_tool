@@ -297,8 +297,80 @@ def process_markdown_files(root_path):
         # Convert to Zuvio IRS QuizBank CSV format
         markdown_to_zuvioIRS_quizbank_csv(markdown_text)
 
+def markdown_to_moodle_quiz_aiken_format(markdown_text):
+    '''
+    將 Markdown 格式的文字轉換為 Moodle Quiz Aiken 格式
+    :param markdown_text: Markdown 格式的文字
+    :return: Moodle Quiz Aiken 格式的文件
+    '''
+    messages = [
+        {
+            "role": "user",
+            "content": f"""
+                #zh-tw
+                以下是一個Markdown格式的內容，markdown格式內容中，選項有標示粗體即為正確答案，請根據標的格式的範例以及注意事項來做轉換，不要產生任何東西
+                
+                [Markdown格式的內容開始]
+                {markdown_text}
+                [Markdown格式的內容結束]
+
+                [標的格式的範例開始]
+                AI文字生成原理是基於什麼技術？
+                A. 機器學習  
+                B. 自然語言處理
+                C. 自回歸分析  
+                D. 深度學習
+                ANSWER: B
+
+                下列何者是生成式AI的特色？
+                A. 無法客製化  
+                B. 多領域應用  
+                C. 不斷退步  
+                D. 無法提供創意和靈感
+                ANSWER: B
+                [標的格式的範例結束]
+
+                [注意事項 開始]
+                1. 每一試題，題幹之前不加題號(匯入Moodle後會自動加上題號)。在各試題之間插入一空行，使形成段落，將試題隔開。
+                2. 題幹內容不管有多長，都必須放在同一行上，中間不可使用換行標籤(在匯入Moodle後會依螢幕大小自動換行)。
+                3. 每一選項都以大寫英文字母A,B,C,D當做選項的標號，緊接一個英文句點"." 或一個右括號")" 然後再空一格，最後面才是選項內容
+                4. 正確答案必須緊接放在最後一個選項之下，並以大寫ANSWER:開頭( : 用英文字型)，空一格，然後加上代表正確答案的大寫英文字母。
+                [注意事項 結束]
+            """
+        }
+    ]
+    response = call_openai_api(messages)
+    extracted_text = response.choices[0].message.content
+    print(f"總token數: {response.usage.total_tokens}")
+    # 將文字轉換為 Moodle Quiz 格式字串並存檔
+    moodle_quiz_text = f"{extracted_text}"
+    # 儲存 Moodle Quiz 格式的文字
+    output_path = "moodle_quiz_output.txt"
+    with open(output_path, "a", encoding="utf-8") as output_file:
+        output_file.write(moodle_quiz_text)
+    print(f"儲存成功: {output_path}")
+
+def process_markdown_files_to_moodle_quiz_format(root_path):
+    '''
+    主函數，負責處理資料夾中的 Markdown 檔案並轉換為 Moodle Quiz 格式
+    :param root_path: 資料夾的路徑
+    :return: None
+    '''
+    md_filePath = get_paths_from_folder(root_path, ('.md'))
+    print(f"找到 {len(md_filePath)} 個 Markdown 檔案")
+    print("開始轉換為 Moodle Quiz 格式...")
+    
+    for md_path in md_filePath:
+        print(f"正在轉換: {md_path}")
+        # Load the Markdown file
+        with open(md_path, "r", encoding="utf-8") as file:
+            markdown_text = file.read()
+        # Convert to Moodle Quiz format
+        markdown_to_moodle_quiz_aiken_format(markdown_text)
+
 if __name__ == '__main__':
-    ocr_with_llm()
+    #ocr_with_llm()
+    process_markdown_files_to_moodle_quiz_format('txt')
     # markdown_to_docx('txt')
     # docx_postprocess('docx')
     # merge_all_docx_files('docx')
